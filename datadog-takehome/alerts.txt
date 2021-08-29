@@ -1,0 +1,12 @@
+# lines starting with a # are considered comments and skipped
+# split on ", "
+# Currently only threshold alerts are implemented
+# threhold can be upper or lower
+# upper = danger zone is when we are above the threhold. message_upper will print as long as we are above it, message_lower when we cross back to safe zone
+# lower = danger zone when we are below the threhold. message logic is exact opposite of above
+#
+#
+# url, severity, metric, aggr_interval(seconds), threshold, threshold_type, message_upper, message_lower
+https://www.google.com/, 1, availability, 120, 0.8, lower, Website https://www.google.com/ is recovered., Website https://www.google.com/ is down.
+https://github.com/, 1, availability, 120, 0.8, lower, Website https://www.google.com/ is recovered., Website https://github.com/ is down.
+https://datadoghq.com/, 1, availability, 120, 0.8, lower, Website https://www.google.com/ is recovered., Website https://datadoghq.com/ is down.
