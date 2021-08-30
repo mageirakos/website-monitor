@@ -1,0 +1,7 @@
+# Just for testing:
+https://datadoghq.com/, 1, availability, 120, 0.99, upper, Website https://www.google.com/ has recovered., Website https://datadoghq.com/ is down.
+https://datadoghq.com/, 2, availability, 120, 0.99, upper, Website https://www.google.com/ has recovered., Website https://datadoghq.com/ is down.
+https://datadoghq.com/, 3, availability, 120, 0.99, upper, Website https://www.google.com/ has recovered., Website https://datadoghq.com/ is down.
+https://datadoghq.com/, 4, availability, 120, 0.99, upper, Website https://www.google.com/ has recovered., Website https://datadoghq.com/ is down.
+https://datadoghq.com/, 5, availability, 120, 0.99, upper, Website https://www.google.com/ has recovered., Website https://datadoghq.com/ is down.
+https://github.com/, 3, total_2xx_codes, 60, 10, lower, Website https://github.com/ has more than 10 successful pings!, Website https://github.com/ has less than 10 successful pings!.

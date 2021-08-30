@@ -1,10 +1,9 @@
 # from abc import ABC, abstractmethod
-import argparse
 import pandas as pd
 import numpy as np
 # import time
 import sched
-from datetime import datetime, timedelta
+from datetime import datetime
 # from collections import defaultdict
 import requests
 
@@ -22,30 +21,34 @@ class Website:
         """
         Method to ping and reschedule next ping of self.website based on self.interval
 
-        :param alerter: Alerter object, because we need it to check alerts on each ping 
+        :param scheduler : Scheduler used to reschedule the next ping
+        :param alerter   : Alerter used to check if any alerts need to be raised
         """
         self.is_being_tracked = True
         # At each ping we are on a specific timestamp ( used for indexing )
         ts = pd.Timestamp(datetime.now())
-        print("f(x) start_pinging")
-        print("pinging.. ", self.url)
+        # print("f(x) start_pinging")
+        # print("pinging.. ", self.url)
         try:
             response = requests.get(self.url, timeout=5)
             row = pd.DataFrame([[response.status_code, response.elapsed]], index=[ts], columns=['code','elapsed'])
-            print(f"ts {ts}, url {self.url}, code {response.status_code}, elapsed {response.elapsed}")
+            # print(f"ts {ts}, url {self.url}, code {response.status_code}, elapsed {response.elapsed}")
         except:
-            #TODO: change -1,None so that it doesn't look the same as others code
+            #TODO: Test that np.NaN works as intended
             row = pd.DataFrame([[np.NaN, np.NaN]], index=[ts], columns=['code','elapsed'])
         self.data = self.data.append(row)
-        print("\tdf: ", self.data)
-
-        print(f"ts: {ts} for {self.url} next in {self.interval}")
-        print()
-        # schedule before we check all alerts
+        # reschedule next ping
         scheduler.enter(self.interval, 1, self.start_pinging, argument=(scheduler, alerter))
-        # Only if there are alerts to be tracked on this website check them, check_alerts
+
+        # print("\tdf: ", self.data)
+        #TODO: Remove below just for testing
+        # self.data.to_pickle(f"./df_{self.url[8:]}.pkl")
+
+
+        # print(f"ts: {ts} for {self.url} next in {self.interval}")
+        # Check if alerts need to be raised
         if self.url in alerter.alerts:
-            alerter.check_alerts(self.url,ts) # check alerts based on current_ts
+            alerter.check_alerts(self.url, ts) 
         return
 
     def __str__(self):

@@ -1,3 +1,4 @@
 https://datadoghq.com/, 5
 https://www.google.com/, 10
 https://github.com/, 5
+http://127.0.0.1:9090/, 3

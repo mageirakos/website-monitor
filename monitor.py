@@ -1,5 +1,7 @@
 import argparse
 import time, sched
+from tabulate import tabulate
+import pandas as pd
 
 from metrics import *
 from alerts import Alert, Alerter
@@ -76,6 +78,9 @@ def read_alerts_file(filename):
             #TODO: Check that format is correct
             url, severity, metric, aggr_interval, threshold, threshold_type, message_upper, message_lower = line.split(', ')
             aggr_interval = int(aggr_interval)
+            severity = int(severity)
+            message_lower = message_lower.rstrip() 
+            message_upper = message_upper.rstrip() 
             #TODO: Gia ta available metrics prepei na exw kapoio .txt pou ta leei idk i sto README.md
             threshold = float(threshold)
             lines.append((url, severity, metric, aggr_interval, threshold, threshold_type, message_upper, message_lower))
@@ -86,7 +91,6 @@ def create_websites(lines):
     websites = {}
     for url, interval in lines:
         websites[url] = Website(url,interval)
-
     return websites
 
 def schedule_pings_and_alerts(websites, scheduler, alerter):
@@ -96,17 +100,32 @@ def schedule_pings_and_alerts(websites, scheduler, alerter):
 
     :param websites: dictionary
     """
-    print("f(x) scheduling pings for websites")
     # enan scheduler gia kathe website
     # opou leei pote that kalesoume gia prwti fora tin site.start_pinging()
     [scheduler.enter(site.interval, 1, site.start_pinging, argument=(scheduler, alerter)) for url, site in websites.items()]
     return
 
-def schedule_reporting(scheduler, interval):
-    #TODO: Create metrics and alerter before scheduling this?
-    scheduler.enter(PRINT_10_MINUTES_INTERVAL, 1, print_stats,argument=(websites_list, 10*60, PRINT_10_MINUTES_INTERVAL, scheduler))
-    scheduler.enter(PRINT_1_HOUR_INTERVAL, 1, print_stats,argument=(websites_list, 60*60, PRINT_1_HOUR_INTERVAL, scheduler))
+def start_reporting(websites, metrics, reschedule_interval, aggr_interval, scheduler):
+    # schedule next and then execute the code
+    scheduler.enter(reschedule_interval, 1, start_reporting,argument=(websites, metrics, reschedule_interval, aggr_interval, scheduler))
+    
+    output, temp = pd.DataFrame(),{}
+    ts = pd.Timestamp(datetime.now())
+    for url, website in websites.items():
+        for metric_name, metric in metrics.items():
+            temp[metric_name] = metric.aggregate(website.url, aggr_interval, ts)
+        row = pd.DataFrame(temp, index=[website.url])
+        output = output.append(row)
+    
+    print(f"\n\t\t---------------REPORTING METRICS FOR PAST {aggr_interval//60} MINUTES as of {ts}---------------")
+    print(tabulate(output, headers='keys', tablefmt='psql'))
     return
+
+
+# def schedule_reporting(websites, metrics, scheduler, reschedule_interval, aggr_interval):
+#     scheduler.enter(reschedule_interval, 1, start_reporting,argument=(websites, metrics, aggr_interval, reschedule_interval, scheduler))
+#     # scheduler.enter(60, 1, report_metrics,argument=(websites, metrics,  60*60, 60, scheduler))
+#     return
 
 #TODO: Test this function
 def setup_alerts(alerter, lines, metrics):
@@ -124,6 +143,7 @@ def setup_alerts(alerter, lines, metrics):
     return
 
 def main():
+    print("Starting monitoring service...")
     # 1. Parse arguments
     (websites_file, alerts_file) = parse_arguments()
     # 2. Read websites.txt
@@ -132,56 +152,23 @@ def main():
     # 3. Create Website objects
     websites = create_websites(lines)
     # 4. Create Metric object
-    #TODO: Test all o fthese
     metrics = create_metrics(websites)
-
-    #TODO: REMOVE - print for testing
-    for key, val in metrics.items():
-        print(key, val)
-    exit()
-
     # 5. Create Alerter
     alerter = Alerter()
-    #TODO: 6. Setup Alerts and link them to Alerter #TODO: This needs Metric objects (each alert linked to a metric)
+    #6. Setup Alerts and link them to Alerter 
     if alerts_file:
         lines = read_alerts_file(alerts_file)   
-        #TODO: TEST if metrics done correctly
         setup_alerts(alerter, lines, metrics)
-
-#TODO: TESTED UP TO HERE
-
-    
-    #7. Create scheduler:
+    # 7. Create scheduler:
     scheduler = sched.scheduler(time.time, time.sleep)
-    #TODO: 8: The Scheduler should:
+    # 8: The Scheduler should:
     # Schedule the pings of each website based on the interval of each website
     schedule_pings_and_alerts(websites, scheduler, alerter)
-    # At every ping we need to monitor our alerts
+    # 9. Schedule Reporting
+    scheduler.enter(10, 1, start_reporting, argument=(websites, metrics, 10, 10*60, scheduler))
+    scheduler.enter(60, 1, start_reporting, argument=(websites, metrics, 60, 60*60, scheduler))
+    
     scheduler.run()
-    return
-    while True:
-        pass
-    exit()
-    #TODO: Reporter
-    #(1) Every 10s, display the stats for the past 10 minutes for each website
-    #(2) Every 60s, display the stats for the past hour for each website
-    #TODO: Create Reporter: which is a scheduled class/function that does (1) and (2)
-            # Goes through all metrics, and computes based on intervals given
-    exit()
-    # TSEKARE : 
-    schedule_reporting()
-
-    #TODO: create_alerts(websites) opou vazoume o,ti alerts + message pou theloume na ginei tracked 
-    #TODO: pinging websites ( kathe ping einai time step ara prepei na stelnoun kai alerts fadazomai)
-    #TODO: Should it return tracked_websites (since they are just the websites, it could I guess)
-
-    #TODO: schedule the statistic printing
-
-#TODO: Where is the main data storage that we have?
-
-    # start scheduler
-    scheduler.run()
-
 
     return 
 

@@ -1,9 +1,21 @@
 from datetime import timedelta
 from collections import defaultdict
+import logging
+from logging_formatter import CustomLoggingFormatter
+
+# Run this code on import, don't add "if __name__"
+# create logger
+logger = logging.getLogger('alerter')
+logger.setLevel(logging.DEBUG)
+# create console handler
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+ch.setFormatter(CustomLoggingFormatter())
+logger.addHandler(ch)
 
 class Alerter:
 
-    def __init__(self, websites):
+    def __init__(self):
         # dick me key " urls " : alerts sto sugkekrimeno url
         self.alerts = defaultdict(list) 
         return
@@ -28,7 +40,6 @@ class Alerter:
         :param url : website's url, used to find alerts specific to that website
         :param ts  : current timestamp
         """
-        print("f(x) check_alerts")
         if url in self.alerts:
             [alert.check_threshold(ts) for alert in self.alerts[url]]
         return
@@ -37,9 +48,7 @@ class Alert:
     def __init__(self, url, severity, metric, aggr_interval, threshold, threshold_type, message_upper, message_lower):
         self.url = url
         self.severity = severity
-        #TODO: Prepei na perasw metric object se kathe alert?
-        self.metric = metric # pros to paron einai metric name
-        # Aggregation interval for specific alerts != reporting interval of specific stats
+        self.metric = metric
         self.aggr_interval = aggr_interval 
         self.threshold = threshold
         self.threshold_type = threshold_type
@@ -54,53 +63,51 @@ class Alert:
     #TODO: To data den prepei na ginetai edw mesa
     def check_threshold(self, ts):
         """ 
+        # we use .has_crossed_threshold to define "danger zone" above or below threshold and "safe zone" on the other side
+        # when in danger zone we want to keep warning
+        # when in safe zone we want to say that we have recovered
+        
+        
         :param data: pandas DataFram with index the ts. so we need to get the data only for the interval we care about
         :param ts: is current timestamp
         """
         #TODO: Check if these are done correctly
         metric_value = self.metric.aggregate(self.url, self.aggr_interval, ts)
-
-        # we use .has_crossed_threshold to define "danger zone" above or below threshold and "safe zone" on the other side
-        # when in danger zone we want to keep warning
-        # when in safe zone we want to say that we have recovered
+        
         if metric_value < self.threshold:
             if self.threshold_type == "upper" and self.has_crossed_threshold:
                 # print once that we recovered
-                _send_alert(self.message_lower, metric_value, ts)
                 self.has_crossed_threshold = False 
-            if self.threshold_type == "lower":
+                self._send_alert(self.message_lower, metric_value, ts)
+            elif self.threshold_type == "lower":
                 # sunexeia prints
                 # WARNING always
-                _send_alert(self.message_lower, metric_value, ts)
                 self.has_crossed_threshold = True
+                self._send_alert(self.message_lower, metric_value, ts)
         elif metric_value > self.threshold:
             if self.threshold_type == "lower" and self.has_crossed_threshold:
                 # print once that we recovered
-                _send_alert(self.message_upper, metric_value, ts)
                 self.has_crossed_threshold = False 
-            if self.threshold_type == "upper":
+                self._send_alert(self.message_upper, metric_value, ts)
+            elif self.threshold_type == "upper":
                 # sunexeia prints
-                # WARNING always
-                _send_alert(self.message_upper, metric_value, ts)
                 self.has_crossed_threshold = True
-                # tsekareis an prin itan 
+                self._send_alert(self.message_upper, metric_value, ts)
              
-
     def _send_alert(self, message, metric_value, ts):
-        #TODO: logging levels WARNING DEBUG kai mlkies?
-        print(f"{message} " + f"{self.metric}= {str(metric_value)}, time={str(ts)}")
+        """
+        Sends alert through logger on appropriate level based on alert severity
+        """
         if self.severity == 1:
-            pass
+            logger.debug(f"{message} {self.metric.name}={metric_value}, time={str(ts)}")
         if self.severity == 2:
-            pass
+            logger.info(f"{message} {self.metric.name}={metric_value}, time={str(ts)}")
         if self.severity == 3:
-            pass
+            logger.warning(f"{message} {self.metric.name}={metric_value}, time={str(ts)}")
         if self.severity == 4:
-            pass
+            logger.error(f"{message} {self.metric.name}={metric_value}, time={str(ts)}")
         if self.severity == 5:
-            pass
+            logger.critical(f"{message} {self.metric.name}={metric_value}, time={str(ts)}")
         return
         
-    
-        #TODO: Add some save here gia historical reasons opws lene oi idioi?
-        return
+
