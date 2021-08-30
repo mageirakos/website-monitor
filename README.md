@@ -30,31 +30,32 @@
 The monitoring application does all of the above, while also allowing the user to specify any type of threshold alert from metrics available that he wishes.
 The user can specify the websites being tracked along with their corresponding interval under `websites.txt` and he can also specify any threshold alert he wants under `alerts.txt`. Formats for both are explained on paragraphs below.   
 
-For each website a Website object is created in which attributes such as url, interval, and data is kept. It also provides the method `.start_pingin()` that sets up the scheduling for the pings of the current website based on its interval.
+For each website a Website object is created in which attributes such as url, interval, and data is kept. It also provides the method `.start_pinging()` that sets up the scheduling for the pings of the current website based on its interval.
 
-The Metrics abstract class exists, which every metric we wish to keep track of must expand and implement the `.aggregate()` method. This method  implements the logic of how the metric is computed, by basically aggregating over website data for a specified interval. Each metric also keeps track of the website objects in order to have access to the correct data. For metric specific assumptions readh the metrics paragraph.
+The Metrics abstract class exists, which every metric we wish to keep track of must expand and implement the `.aggregate()` method. This method  implements the logic of how the metric is computed, by basically aggregating over website data for a specified interval. Each metric also keeps track of the website objects in order to have access to the correct data. For metric specific assumptions read the metrics paragraph.
 
 Each alert the user specifies under `alerts.txt` is mapped to an Alert object that is tracked by the Alerter. Since in our application a time step is when we ping a website, each time a ping happens we also ask the alerter to check all the alerts for this specific website and update the user.
-The main use of the Alert object is to keep track of the `metric, website, threshold, severity` combination specified by the user, and check if the metric computed over a specified interval for the website has crossed a threshold (over or under). If so, then an alert is sent based on the severity level. (https://www.datadoghq.com/blog/monitoring-101-alerting/) . The current Alert object is only keeping track for alerts regarding threshold, we can extend the classes to include different types of Alerts (https://www.datadoghq.com/blog/alerting-101-metric-checks/). Colouring of alerts based on severity is specified uner `logging_formatter.py`.
+The main use of the Alert object is to keep track of the `metric, website, threshold, severity` combination specified by the user, and check if the metric computed over a specified interval for the website has crossed a threshold (over or under). If so, then an alert is sent based on the severity level. (https://www.datadoghq.com/blog/monitoring-101-alerting/) . The current Alert object is only keeping track for alerts regarding threshold, we can extend the classes to include different types of Alerts (https://www.datadoghq.com/blog/alerting-101-metric-checks/). Colouring of alerts based on severity is specified under `logging_formatter.py`.
 
-There are more details around design decition and attributes of Alerts class, so `please read the alerts paragraph`.
+There are more details around design decision and attributes of Alerts class, so `please read the alerts paragraph`.
 
 Finally, we have a helper function under `monitor.py` that prints the statistics requested and reschedules the next print. 
 
-`Testing` is done by spinning up a local server `$python3 run_local_server.py`, closing it after a specified interval and then restaring it again. This way we can check that availablity drops (over the interval the server is closed) and then comes back up while all the alerts are shown correctly.
+`Testing` is done by spinning up a local server `$python3 run_local_server.py`, closing it after a specified interval and then restaring it again. This way we can check that availability drops (over the interval the server is closed) and then comes back up while all the alerts are shown correctly.
 
 
-Event scheduler from Python's Standard Library (`sched`) is used to schedule the pings and the reporing of the metrics correctly.    
-Tabluate library (`tabulate`) was used to pretty print the statistics report.    
+Event scheduler from Python's Standard Library (`sched`) is used to schedule the pings and the reporting of the metrics correctly.    
+Tabulate library (`tabulate`) was used to pretty print the statistics report.    
 `Pandas` library was used due to the easy of data organization and methods to compute statistics over intervals (timestamp of pings was used as index).  
-`Logging` library was used to simulate alerting severity logic.  
-`Black` was used for code formating (not included in requirements.txt)
+`Logging` library was used to simulate alerting severity logic.    
+`requests` library is used to ping websites and get status code and elapsed response time.  
+`Black` was used for code formatting (not included in requirements.txt)
 
 ![example](./example.PNG)
 
 # Setup
 
-Install required packages (pandas, numpy, requrests, tabulate)
+Install required packages (pandas, numpy, requests, tabulate)
 ``` bash
 $ pip install -r requirements.txt
 ```
@@ -88,11 +89,11 @@ When the server is restarted and we recover with availability > 0.8 a final reco
 # Website
 Website class in which attributes such as url, interval, and data is kept.
 Data is a DataFrame of the history of status_codes and elapsed response times for each ping.
-It also provides the method `.start_pingin()` that sets up the scheduling for the pings of the current website based on its interval
+It also provides the method `.start_pinging()` that sets up the scheduling for the pings of the current website based on its interval
 ### Text file format:
 - lines starting with `#` are considered comments and skipped
 - each line is a single website holding values: `url, interval`
-- make sure that values are comma and single space seperated as above
+- make sure that values are comma and single space separated as above
 - no empty lines should exist  
 
 ### Example
@@ -104,7 +105,7 @@ http://127.0.0.1:9090/, 3
 ```
 # Metrics
 Each different metric belongs to the Metric abstract class, and it has to be specified under `metrics.py`.   
-The `.aggregate()` method of each metric is used to compute an ouput value, by aggregating a websites data over the specified aggregation interval.
+The `.aggregate()` method of each metric is used to compute an output value, by aggregating a websites data over the specified aggregation interval.
 
 All metrics being tracked can be found under `metrics.py` and are also mentioned in the alerts explanation below.
 
@@ -127,7 +128,7 @@ All alerts need to be specified on a text file (default alerts.txt) and passed a
 ### Text file format:
 - lines starting with `#` are considered comments and skipped
 - each line is a single alert holding values: `url, severity, metric, aggr_interval, threshold, threshold_type, message_upper, message_lower`
-- make sure that values are comma and single space seperated as above
+- make sure that values are comma and single space separated as above
 - no empty lines should exist
 
 
@@ -165,7 +166,7 @@ All alerts need to be specified on a text file (default alerts.txt) and passed a
 - Add automated tests for the full alerting logic. Currently we are just spinning up a local server and checking if availability prints are correct, but since the application allows for any time of alert to be setup we need to run automated tests.
 - Have multiple Alert classes, not just the Threshold Alert one, which I have implemented now. 
     - Change alerts, Outlier alerts, Anomaly alerts, Event alerts Composite alerts, as specified on https://www.datadoghq.com/blog/alerting-101-metric-checks/
-- Add persistant storage so that data is saved between runs (InfluxDB could be used since its a timeseries database applicable to our use-case)
+- Add persistent storage so that data is saved between runs (InfluxDB could be used since its a timeseries database applicable to our use-case)
 - Dynamically resize the reporting output based on terminal size (currently if terminal not wide enough, output might not appear correct if user does not resize)
 - Add better extraction logic to message_upper, message_lower from alerts.tx. 
     - For example instead of having "Website github.com is down", we can have "Website $url is down." on the .txt file and with correct parsing (regex.replace()) the alerter can identify the pattern ( something like r"\$.* ") and replace is with the url defined
