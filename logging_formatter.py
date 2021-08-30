@@ -2,6 +2,11 @@ import logging
 
 
 class CustomLoggingFormatter(logging.Formatter):
+    """
+    Custom Formater used in Alerts
+
+    Introduces different colours based on alert severity
+    """
 
     grey = "\x1b[38;21m"
     yellow = "\x1b[33;21m"
@@ -15,7 +20,7 @@ class CustomLoggingFormatter(logging.Formatter):
         logging.INFO: grey + format + reset,
         logging.WARNING: yellow + format + reset,
         logging.ERROR: red + format + reset,
-        logging.CRITICAL: bold_red + format + reset
+        logging.CRITICAL: bold_red + format + reset,
     }
 
     def format(self, record):
