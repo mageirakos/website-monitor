@@ -25,7 +25,7 @@
  
 
 
-# My Solution
+# Detail
 
 The monitoring application does all of the above, while also allowing the user to specify any type of threshold alert from metrics available that he wishes.
 The user can specify the websites being tracked along with their corresponding interval under `websites.txt` and he can also specify any threshold alert he wants under `alerts.txt`. Formats for both are explained on paragraphs below.   
