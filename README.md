@@ -4,28 +4,14 @@
 # Website availability & performance monitoring
 ## Overview
 
-- Create a console program to monitor performance and availability of websites
-- The user can define which websites are checked and at what intervals
-- Users can keep the console app running and monitor the websites
+This is a console program that monitors the availability of websites. The user can define which websites to be checked and at what intervals to update their statistics. Users can also keep the console app running.
 
-## Stats
-- Check the different websites with their corresponding check intervals
-- Compute a few interesting metrics: availability, max/avg response times, response codes count and more...
-- Every 10s, display the stats for the past 10 minutes for each website
-- Every minute, displays the stats for the past hour for each website
+Some interesting metrics include availability, max/avg response times, response codes count and more...
+Every 10s, it displays the stats for the past 10 minutes for each website. Every minute, the stats for the past hour for each website.
 
-## Alerting
-- When a website availability is below 80% for the past 2 minutes, add a message saying that "Website {website } is down. availability={availability }, time={time }"
-- When availability resumes for the past 2 minutes, add another message detailing when the alert recovered
-- Make sure all messages showing when alerting thresholds are crossed remain visible on the page for historical reasons
+When a website availability is below 80% for the past 2 minutes, there is a message alerting the user and if it resumes there is a message detailing when the alert recovered. 
 
-## Tests & question
-- Write a test for the alerting logic
-- Explain how you'd improve on this application design
- 
-
-
-# Detail
+# In more detail
 
 The monitoring application does all of the above, while also allowing the user to specify any type of threshold alert from metrics available that he wishes.
 The user can specify the websites being tracked along with their corresponding interval under `websites.txt` and he can also specify any threshold alert he wants under `alerts.txt`. Formats for both are explained on paragraphs below.   
@@ -35,7 +21,7 @@ For each website a Website object is created in which attributes such as url, in
 The Metrics abstract class exists, which every metric we wish to keep track of must expand and implement the `.aggregate()` method. This method  implements the logic of how the metric is computed, by basically aggregating over website data for a specified interval. Each metric also keeps track of the website objects in order to have access to the correct data. For metric specific assumptions read the metrics paragraph.
 
 Each alert the user specifies under `alerts.txt` is mapped to an Alert object that is tracked by the Alerter. Since in our application a time step is when we ping a website, each time a ping happens we also ask the alerter to check all the alerts for this specific website and update the user.
-The main use of the Alert object is to keep track of the `metric, website, threshold, severity` combination specified by the user, and check if the metric computed over a specified interval for the website has crossed a threshold (over or under). If so, then an alert is sent based on the severity level. (https://www.datadoghq.com/blog/monitoring-101-alerting/) . The current Alert object is only keeping track for alerts regarding threshold, we can extend the classes to include different types of Alerts (https://www.datadoghq.com/blog/alerting-101-metric-checks/). Colouring of alerts based on severity is specified under `logging_formatter.py`.
+The main use of the Alert object is to keep track of the `metric, website, threshold, severity` combination specified by the user, and check if the metric computed over a specified interval for the website has crossed a threshold (over or under). If so, then an alert is sent based on the [severity level](https://www.datadoghq.com/blog/monitoring-101-alerting/) . The current Alert object is only keeping track for alerts regarding threshold, we can extend the classes to include different [types of Alerts](https://www.datadoghq.com/blog/alerting-101-metric-checks/). Colouring of alerts based on severity is specified under `logging_formatter.py`.
 
 There are more details around design decision and attributes of Alerts class, so `please read the alerts paragraph`.
 
